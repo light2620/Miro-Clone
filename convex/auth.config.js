@@ -1,7 +1,7 @@
 export default {
   providers: [
     {
-      domain: "https://skilled-termite-54.clerk.accounts.dev",
+      domain: "https://healthy-doberman-29.clerk.accounts.dev",
       applicationID: "convex",
     },
   ],

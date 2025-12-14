@@ -7,14 +7,42 @@ import {
 import { createRoomContext } from "@liveblocks/react";
 import type { Layer, Color } from "@/types/canvas";
 
+/* ------------------------------------------------------------------ */
+/* Liveblocks Client                                                   */
+/* ------------------------------------------------------------------ */
+
 const client = createClient({
   authEndpoint: "/api/liveblocks-auth",
   throttle: 16,
+
+  /**
+   * Resolve users for Comments, Mentions, and Presence
+   * This MUST live inside createClient (Liveblocks >= 1.10)
+   */
+  async resolveUsers({ userIds }) {
+    // Replace with your DB / Auth provider lookup
+    return userIds.map((id) => ({
+      name: id,
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(id)}`,
+    }));
+  },
+
+  /**
+   * Resolve mention suggestions for Comments
+   */
+  async resolveMentionSuggestions({ text }) {
+    // Example static fallback
+    // Replace with DB search
+    if (!text) return [];
+
+    return [];
+  },
 });
 
-// Presence represents the properties that exist on every user in the Room
-// and that will automatically be kept in sync. Accessible through the
-// `user.presence` property. Must be JSON-serializable.
+/* ------------------------------------------------------------------ */
+/* Presence Types                                                      */
+/* ------------------------------------------------------------------ */
+
 type Presence = {
   cursor: { x: number; y: number } | null;
   selection: string[];
@@ -22,18 +50,19 @@ type Presence = {
   pencilColor: Color | null;
 };
 
-// Optionally, Storage represents the shared document that persists in the
-// Room, even after all users leave. Fields under Storage typically are
-// LiveList, LiveMap, LiveObject instances, for which updates are
-// automatically persisted and synced to all connected clients.
+/* ------------------------------------------------------------------ */
+/* Storage Types                                                       */
+/* ------------------------------------------------------------------ */
+
 type Storage = {
   layers: LiveMap<string, LiveObject<Layer>>;
   layerIds: LiveList<string>;
 };
 
-// Optionally, UserMeta represents static/readonly metadata on each user, as
-// provided by your own custom auth back end (if used). Useful for data that
-// will not change during a session, like a user's name or avatar.
+/* ------------------------------------------------------------------ */
+/* User Metadata                                                       */
+/* ------------------------------------------------------------------ */
+
 type UserMeta = {
   id?: string;
   info?: {
@@ -42,20 +71,27 @@ type UserMeta = {
   };
 };
 
-// Optionally, the type of custom events broadcast and listened to in this
-// room. Use a union for multiple events. Must be JSON-serializable.
+/* ------------------------------------------------------------------ */
+/* Room Events                                                         */
+/* ------------------------------------------------------------------ */
+
 type RoomEvent = {
-  // type: "NOTIFICATION",
-  // ...
+  // Add custom events here if needed
 };
 
-// Optionally, when using Comments, ThreadMetadata represents metadata on
-// each thread. Can only contain booleans, strings, and numbers.
+/* ------------------------------------------------------------------ */
+/* Thread Metadata (Comments)                                          */
+/* ------------------------------------------------------------------ */
+
 export type ThreadMetadata = {
-  // resolved: boolean;
-  // quote: string;
-  // time: number;
+  // resolved?: boolean;
+  // quote?: string;
+  // time?: number;
 };
+
+/* ------------------------------------------------------------------ */
+/* Room Context                                                        */
+/* ------------------------------------------------------------------ */
 
 export const {
   suspense: {
@@ -84,6 +120,8 @@ export const {
     useMutation,
     useStatus,
     useLostConnectionListener,
+
+    // Comments API
     useThreads,
     useUser,
     useCreateThread,
@@ -94,44 +132,10 @@ export const {
     useAddReaction,
     useRemoveReaction,
   },
-} = createRoomContext<Presence, Storage, UserMeta, RoomEvent, ThreadMetadata>(
-  client,
-  {
-    async resolveUsers({ userIds }) {
-      // Used only for Comments. Return a list of user information retrieved
-      // from `userIds`. This info is used in comments, mentions etc.
-
-      // const usersData = await __fetchUsersFromDB__(userIds);
-      //
-      // return usersData.map((userData) => ({
-      //   name: userData.name,
-      //   avatar: userData.avatar.src,
-      // }));
-
-      return [];
-    },
-    async resolveMentionSuggestions({ text, roomId }) {
-      // Used only for Comments. Return a list of userIds that match `text`.
-      // These userIds are used to create a mention list when typing in the
-      // composer.
-      //
-      // For example when you type "@jo", `text` will be `"jo"`, and
-      // you should to return an array with John and Joanna's userIds:
-      // ["john@example.com", "joanna@example.com"]
-
-      // const userIds = await __fetchAllUserIdsFromDB__(roomId);
-      //
-      // Return all userIds if no `text`
-      // if (!text) {
-      //   return userIds;
-      // }
-      //
-      // Otherwise, filter userIds for the search `text` and return
-      // return userIds.filter((userId) =>
-      //   userId.toLowerCase().includes(text.toLowerCase())
-      // );
-
-      return [];
-    },
-  }
-);
+} = createRoomContext<
+  Presence,
+  Storage,
+  UserMeta,
+  RoomEvent,
+  ThreadMetadata
+>(client);
